@@ -38,8 +38,8 @@ class Formation {
     );
   }
 
-  static List<PlayerPosition> default433Positions([List<String> playerIds = const <String>[]]) {
-    String? at(int index) => index < playerIds.length ? playerIds[index] : null;
+  static List<PlayerPosition> default433Positions([List<int> playerIds = const <int>[]]) {
+    int? at(int index) => index < playerIds.length ? playerIds[index] : null;
 
     return <PlayerPosition>[
       PlayerPosition(id: 'gk', label: 'GK', x: 0.50, y: 0.92, playerId: at(0)),
@@ -56,8 +56,8 @@ class Formation {
     ];
   }
 
-  static List<PlayerPosition> default4231Positions([List<String> playerIds = const <String>[]]) {
-    String? at(int index) => index < playerIds.length ? playerIds[index] : null;
+  static List<PlayerPosition> default4231Positions([List<int> playerIds = const <int>[]]) {
+    int? at(int index) => index < playerIds.length ? playerIds[index] : null;
 
     return <PlayerPosition>[
       PlayerPosition(id: 'gk', label: 'GK', x: 0.50, y: 0.92, playerId: at(0)),
@@ -74,8 +74,8 @@ class Formation {
     ];
   }
 
-  static List<PlayerPosition> default352Positions([List<String> playerIds = const <String>[]]) {
-    String? at(int index) => index < playerIds.length ? playerIds[index] : null;
+  static List<PlayerPosition> default352Positions([List<int> playerIds = const <int>[]]) {
+    int? at(int index) => index < playerIds.length ? playerIds[index] : null;
 
     return <PlayerPosition>[
       PlayerPosition(id: 'gk', label: 'GK', x: 0.50, y: 0.92, playerId: at(0)),
@@ -94,7 +94,7 @@ class Formation {
 
   static List<PlayerPosition> defaultPositionsForScheme(
     String schemeId, [
-    List<String> playerIds = const <String>[],
+    List<int> playerIds = const <int>[],
   ]) {
     switch (schemeId) {
       case '4-2-3-1':
@@ -107,7 +107,7 @@ class Formation {
     }
   }
 
-  static Formation preset(String schemeId, List<String> playerIds) {
+  static Formation preset(String schemeId, List<int> playerIds) {
     return Formation(
       id: schemeId,
       name: schemeId,
@@ -116,7 +116,7 @@ class Formation {
     );
   }
 
-  static List<Formation> presetSamples(List<String> playerIds) {
+  static List<Formation> presetSamples(List<int> playerIds) {
     return <Formation>[
       preset('4-3-3', playerIds),
       preset('4-2-3-1', playerIds),
@@ -124,7 +124,7 @@ class Formation {
     ];
   }
 
-  factory Formation.sample433(List<String> playerIds) {
+  factory Formation.sample433(List<int> playerIds) {
     return Formation(
       id: '4-3-3',
       name: '4-3-3',

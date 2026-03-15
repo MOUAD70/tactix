@@ -1,25 +1,24 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import 'package:flutter_application_1/widgets/custom_button.dart';
-import 'package:flutter_application_1/widgets/custom_input.dart';
+import '../../core/errors/exceptions.dart';
+import '../../core/utils/validators.dart';
+import '../../shared/widgets/loading_widget.dart';
+import 'providers/auth_provider.dart';
+import 'data/models/user_model.dart';
 
-class LoginScreen extends StatefulWidget {
-  const LoginScreen({
-    super.key,
-    required this.onLogin,
-    required this.onOpenRegister,
-  });
-
-  final void Function(String email, String password) onLogin;
-  final VoidCallback onOpenRegister;
+class LoginScreen extends ConsumerStatefulWidget {
+  const LoginScreen({super.key});
 
   @override
-  State<LoginScreen> createState() => _LoginScreenState();
+  ConsumerState<LoginScreen> createState() => _LoginScreenState();
 }
 
-class _LoginScreenState extends State<LoginScreen> {
-  final _emailController = TextEditingController(text: 'coach@tactix.app');
-  final _passwordController = TextEditingController(text: 'password');
+class _LoginScreenState extends ConsumerState<LoginScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _emailController = TextEditingController();
+  final _passwordController = TextEditingController();
 
   @override
   void dispose() {
@@ -28,8 +27,35 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _onLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+
+    await ref.read(authProvider.notifier).login(
+          email: _emailController.text.trim(),
+          password: _passwordController.text.trim(),
+        );
+  }
+
   @override
   Widget build(BuildContext context) {
+    final authState = ref.watch(authProvider);
+
+    ref.listen<AsyncValue<UserModel?>>(authProvider, (previous, next) {
+      if (next is AsyncData && next.value != null) {
+        context.go('/home');
+      }
+      if (next is AsyncError) {
+        final error = next.error;
+        final message = error is ApiException ? error.message : error.toString();
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(message),
+            backgroundColor: Theme.of(context).colorScheme.error,
+          ),
+        );
+      }
+    });
+
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -40,43 +66,51 @@ class _LoginScreenState extends State<LoginScreen> {
               child: Card(
                 child: Padding(
                   padding: const EdgeInsets.all(28),
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Tactix', style: Theme.of(context).textTheme.headlineMedium),
-                      const SizedBox(height: 8),
-                      Text(
-                        'Continue to the coaching board',
-                        style: Theme.of(context).textTheme.bodyLarge,
-                      ),
-                      const SizedBox(height: 24),
-                      CustomInput(label: 'Email', controller: _emailController),
-                      const SizedBox(height: 16),
-                      CustomInput(
-                        label: 'Password',
-                        controller: _passwordController,
-                        obscureText: true,
-                      ),
-                      const SizedBox(height: 20),
-                      CustomButton(
-                        label: 'Login',
-                        icon: Icons.login,
-                        onPressed: () => widget.onLogin(
-                          _emailController.text.trim(),
-                          _passwordController.text,
+                  child: authState.isLoading
+                      ? const LoadingWidget(message: 'Signing in...')
+                      : Form(
+                          key: _formKey,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text('Tactix', style: Theme.of(context).textTheme.headlineMedium),
+                              const SizedBox(height: 8),
+                              Text(
+                                'Continue to the coaching board',
+                                style: Theme.of(context).textTheme.bodyLarge,
+                              ),
+                              const SizedBox(height: 24),
+                              TextFormField(
+                                controller: _emailController,
+                                decoration: const InputDecoration(labelText: 'Email'),
+                                keyboardType: TextInputType.emailAddress,
+                                validator: Validators.validateEmail,
+                              ),
+                              const SizedBox(height: 16),
+                              TextFormField(
+                                controller: _passwordController,
+                                decoration: const InputDecoration(labelText: 'Password'),
+                                obscureText: true,
+                                validator: Validators.validatePassword,
+                              ),
+                              const SizedBox(height: 20),
+                              ElevatedButton.icon(
+                                onPressed: _onLogin,
+                                icon: const Icon(Icons.login),
+                                label: const Text('Login'),
+                              ),
+                              const SizedBox(height: 12),
+                              Align(
+                                alignment: Alignment.centerRight,
+                                child: TextButton(
+                                  onPressed: () => context.go('/register'),
+                                  child: const Text('Create account'),
+                                ),
+                              ),
+                            ],
+                          ),
                         ),
-                      ),
-                      const SizedBox(height: 12),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: widget.onOpenRegister,
-                          child: const Text('Create account'),
-                        ),
-                      ),
-                    ],
-                  ),
                 ),
               ),
             ),

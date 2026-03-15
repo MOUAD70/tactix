@@ -31,7 +31,7 @@ class FormationScreen extends StatefulWidget {
 
 class _FormationScreenState extends State<FormationScreen> {
   String? _selectedPositionId;
-  String? _selectedBenchPlayerId;
+  int? _selectedBenchPlayerId;
 
   Future<void> _showSaveFormationDialog(TactixAppState state) async {
     final controller = TextEditingController(text: '${state.formation.name} Copy');

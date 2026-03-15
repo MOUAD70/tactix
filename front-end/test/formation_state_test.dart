@@ -7,13 +7,13 @@ void main() {
     test('assigns a bench player to a position and benches previous occupant', () {
       final state = TactixAppState();
 
-      expect(state.benchPlayers.any((player) => player.id == 'p12'), isTrue);
+      expect(state.benchPlayers.any((player) => player.id == 12), isTrue);
 
-      state.assignPlayerToPosition(playerId: 'p12', positionId: 'lw');
+      state.assignPlayerToPosition(playerId: 12, positionId: 'lw');
 
-      expect(state.formation.findPosition('lw')?.playerId, 'p12');
-      expect(state.benchPlayers.any((player) => player.id == 'p9'), isTrue);
-      expect(state.benchPlayers.any((player) => player.id == 'p12'), isFalse);
+      expect(state.formation.findPosition('lw')?.playerId, 12);
+      expect(state.benchPlayers.any((player) => player.id == 9), isTrue);
+      expect(state.benchPlayers.any((player) => player.id == 12), isFalse);
     });
 
     test('moves and resets formation positions', () {
@@ -34,8 +34,8 @@ void main() {
 
       state.swapPositionAssignments(fromPositionId: 'lw', toPositionId: 'rw');
 
-      expect(state.formation.findPosition('lw')?.playerId, 'p11');
-      expect(state.formation.findPosition('rw')?.playerId, 'p9');
+      expect(state.formation.findPosition('lw')?.playerId, 11);
+      expect(state.formation.findPosition('rw')?.playerId, 9);
     });
 
     test('switches between saved formation setups', () {

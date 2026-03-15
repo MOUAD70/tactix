@@ -1,33 +1,26 @@
 import 'package:flutter/material.dart';
 
-import 'package:flutter_application_1/models/player.dart';
+import 'data/models/player_model.dart';
 
 class PlayerCard extends StatelessWidget {
   const PlayerCard({
     super.key,
     required this.player,
-    required this.onEdit,
-    required this.onDelete,
+    this.onTap,
   });
 
-  final Player player;
-  final VoidCallback onEdit;
-  final VoidCallback onDelete;
+  final PlayerModel player;
+  final VoidCallback? onTap;
 
   @override
   Widget build(BuildContext context) {
     return Card(
       child: ListTile(
+        onTap: onTap,
         leading: CircleAvatar(child: Text('${player.jerseyNumber}')),
         title: Text(player.name),
         subtitle: Text(player.position.label),
-        trailing: Wrap(
-          spacing: 8,
-          children: [
-            IconButton(onPressed: onEdit, icon: const Icon(Icons.edit_outlined)),
-            IconButton(onPressed: onDelete, icon: const Icon(Icons.delete_outline)),
-          ],
-        ),
+        trailing: const Icon(Icons.chevron_right),
       ),
     );
   }

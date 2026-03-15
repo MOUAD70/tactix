@@ -1,43 +1,41 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:flutter_application_1/core/state/app_state.dart';
-import 'package:flutter_application_1/widgets/custom_button.dart';
-import 'package:flutter_application_1/widgets/custom_input.dart';
+import '../../widgets/custom_button.dart';
+import '../../widgets/custom_input.dart';
+import '../auth/providers/auth_provider.dart';
 
-class ProfileScreen extends StatefulWidget {
-  const ProfileScreen({super.key, required this.onLogout});
-
-  final VoidCallback onLogout;
+class ProfileScreen extends ConsumerStatefulWidget {
+  const ProfileScreen({super.key});
 
   @override
-  State<ProfileScreen> createState() => _ProfileScreenState();
+  ConsumerState<ProfileScreen> createState() => _ProfileScreenState();
 }
 
-class _ProfileScreenState extends State<ProfileScreen> {
-  TextEditingController? _nameController;
-  TextEditingController? _emailController;
+class _ProfileScreenState extends ConsumerState<ProfileScreen> {
+  late final TextEditingController _nameController;
+  late final TextEditingController _emailController;
   bool _initialized = false;
 
-  @override
-  void didChangeDependencies() {
-    super.didChangeDependencies();
+  void _ensureInitialized() {
     if (_initialized) return;
-    final state = AppStateScope.of(context);
-    _nameController = TextEditingController(text: state.coachName);
-    _emailController = TextEditingController(text: state.coachEmail);
+    final user = ref.read(authProvider).asData?.value;
+    _nameController = TextEditingController(text: user?.name ?? '');
+    _emailController = TextEditingController(text: user?.email ?? '');
     _initialized = true;
   }
 
   @override
   void dispose() {
-    _nameController?.dispose();
-    _emailController?.dispose();
+    _nameController.dispose();
+    _emailController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final state = AppStateScope.of(context);
+    _ensureInitialized();
+    final user = ref.watch(authProvider).asData?.value;
 
     return SingleChildScrollView(
       child: Card(
@@ -56,16 +54,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       children: [
                         Text('Coach profile', style: Theme.of(context).textTheme.headlineSmall),
                         const SizedBox(height: 4),
-                        const Text('Frontend-only profile management for now.'),
+                        Text(user == null ? 'Please login to see profile details.' : 'Update your account information below.'),
                       ],
                     ),
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              CustomInput(label: 'Name', controller: _nameController!),
+              CustomInput(label: 'Name', controller: _nameController),
               const SizedBox(height: 16),
-              CustomInput(label: 'Email', controller: _emailController!),
+              CustomInput(label: 'Email', controller: _emailController),
               const SizedBox(height: 20),
               Row(
                 children: [
@@ -74,12 +72,8 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: 'Save Profile',
                       icon: Icons.save_outlined,
                       onPressed: () {
-                        state.updateCoachProfile(
-                          name: _nameController!.text.trim(),
-                          email: _emailController!.text.trim(),
-                        );
                         ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Profile updated locally.')),
+                          const SnackBar(content: Text('Profile updates are not synced with the server yet.')),
                         );
                       },
                     ),
@@ -90,7 +84,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
                       label: 'Logout',
                       icon: Icons.logout,
                       isPrimary: false,
-                      onPressed: widget.onLogout,
+                      onPressed: () {
+                        ref.read(authProvider.notifier).logout();
+                      },
                     ),
                   ),
                 ],

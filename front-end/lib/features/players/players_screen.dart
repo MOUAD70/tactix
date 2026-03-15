@@ -1,17 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-import 'package:flutter_application_1/core/state/app_state.dart';
-import 'package:flutter_application_1/features/players/add_player_screen.dart';
-import 'package:flutter_application_1/features/players/edit_player_screen.dart';
-import 'package:flutter_application_1/features/players/player_card.dart';
-import 'package:flutter_application_1/models/player.dart';
+import '../../shared/widgets/app_error_widget.dart';
+import '../../shared/widgets/loading_widget.dart';
+import 'providers/player_provider.dart';
+import 'player_card.dart';
 
-class PlayersScreen extends StatelessWidget {
+class PlayersScreen extends ConsumerWidget {
   const PlayersScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final state = AppStateScope.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final playersState = ref.watch(playerListProvider);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -21,12 +22,7 @@ class PlayersScreen extends StatelessWidget {
             Text('Squad management', style: Theme.of(context).textTheme.headlineSmall),
             const Spacer(),
             FilledButton.icon(
-              onPressed: () async {
-                final player = await Navigator.of(context).push<Player>(
-                  MaterialPageRoute(builder: (_) => const AddPlayerScreen()),
-                );
-                if (player != null) state.addPlayer(player);
-              },
+              onPressed: () => context.push('/players/add'),
               icon: const Icon(Icons.person_add_alt_1),
               label: const Text('Add Player'),
             ),
@@ -34,35 +30,30 @@ class PlayersScreen extends StatelessWidget {
         ),
         const SizedBox(height: 12),
         Expanded(
-          child: ListView.separated(
-            itemCount: state.players.length,
-            separatorBuilder: (context, index) => const SizedBox(height: 8),
-            itemBuilder: (context, index) {
-              final player = state.players[index];
-              return PlayerCard(
-                player: player,
-                onEdit: () async {
-                  final updated = await Navigator.of(context).push<Player>(
-                    MaterialPageRoute(builder: (_) => EditPlayerScreen(player: player)),
+          child: playersState.when(
+            data: (players) {
+              if (players.isEmpty) {
+                return Center(
+                  child: Text('No players yet. Tap "Add Player" to get started.', style: Theme.of(context).textTheme.bodyLarge),
+                );
+              }
+              return ListView.separated(
+                itemCount: players.length,
+                separatorBuilder: (context, index) => const SizedBox(height: 8),
+                itemBuilder: (context, index) {
+                  final player = players[index];
+                  return PlayerCard(
+                    player: player,
+                    onTap: () => context.push('/players/${player.id}'),
                   );
-                  if (updated != null) state.updatePlayer(updated);
-                },
-                onDelete: () async {
-                  final confirmed = await showDialog<bool>(
-                    context: context,
-                    builder: (context) => AlertDialog(
-                      title: const Text('Delete player'),
-                      content: Text('Remove ${player.name} from the squad?'),
-                      actions: [
-                        TextButton(onPressed: () => Navigator.pop(context, false), child: const Text('Cancel')),
-                        FilledButton(onPressed: () => Navigator.pop(context, true), child: const Text('Delete')),
-                      ],
-                    ),
-                  );
-                  if (confirmed ?? false) state.deletePlayer(player.id);
                 },
               );
             },
+            loading: () => const LoadingWidget(message: 'Loading players...'),
+            error: (error, stack) => AppErrorWidget(
+              message: error.toString(),
+              onRetry: () => ref.read(playerListProvider.notifier).loadPlayers(),
+            ),
           ),
         ),
       ],

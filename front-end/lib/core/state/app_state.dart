@@ -22,20 +22,20 @@ class TactixAppState extends ChangeNotifier {
   String? _profilePhoto;
 
   final List<Player> _players = <Player>[
-    Player(id: 'p1', name: 'Yassine Bounou', jerseyNumber: 1, position: PlayerRole.gk),
-    Player(id: 'p2', name: 'Achraf Hakimi', jerseyNumber: 2, position: PlayerRole.rb),
-    Player(id: 'p3', name: 'Romain Saiss', jerseyNumber: 6, position: PlayerRole.cb),
-    Player(id: 'p4', name: 'Nayef Aguerd', jerseyNumber: 5, position: PlayerRole.cb),
-    Player(id: 'p5', name: 'Noussair Mazraoui', jerseyNumber: 3, position: PlayerRole.lb),
-    Player(id: 'p6', name: 'Sofyan Amrabat', jerseyNumber: 4, position: PlayerRole.cm),
-    Player(id: 'p7', name: 'Azzedine Ounahi', jerseyNumber: 8, position: PlayerRole.cm),
-    Player(id: 'p8', name: 'Selim Amallah', jerseyNumber: 15, position: PlayerRole.cm),
-    Player(id: 'p9', name: 'Hakim Ziyech', jerseyNumber: 7, position: PlayerRole.rw),
-    Player(id: 'p10', name: 'Youssef En-Nesyri', jerseyNumber: 19, position: PlayerRole.st),
-    Player(id: 'p11', name: 'Sofiane Boufal', jerseyNumber: 17, position: PlayerRole.lw),
-    Player(id: 'p12', name: 'Abde Ezzalzouli', jerseyNumber: 16, position: PlayerRole.lw),
-    Player(id: 'p13', name: 'Bilal El Khannouss', jerseyNumber: 14, position: PlayerRole.am),
-    Player(id: 'p14', name: 'Jawad El Yamiq', jerseyNumber: 18, position: PlayerRole.cb),
+    Player(id: 1, name: 'Yassine Bounou', jerseyNumber: 1, position: PlayerRole.gk),
+    Player(id: 2, name: 'Achraf Hakimi', jerseyNumber: 2, position: PlayerRole.rb),
+    Player(id: 3, name: 'Romain Saiss', jerseyNumber: 6, position: PlayerRole.cb),
+    Player(id: 4, name: 'Nayef Aguerd', jerseyNumber: 5, position: PlayerRole.cb),
+    Player(id: 5, name: 'Noussair Mazraoui', jerseyNumber: 3, position: PlayerRole.lb),
+    Player(id: 6, name: 'Sofyan Amrabat', jerseyNumber: 4, position: PlayerRole.cm),
+    Player(id: 7, name: 'Azzedine Ounahi', jerseyNumber: 8, position: PlayerRole.cm),
+    Player(id: 8, name: 'Selim Amallah', jerseyNumber: 15, position: PlayerRole.cm),
+    Player(id: 9, name: 'Hakim Ziyech', jerseyNumber: 7, position: PlayerRole.rw),
+    Player(id: 10, name: 'Youssef En-Nesyri', jerseyNumber: 19, position: PlayerRole.st),
+    Player(id: 11, name: 'Sofiane Boufal', jerseyNumber: 17, position: PlayerRole.lw),
+    Player(id: 12, name: 'Abde Ezzalzouli', jerseyNumber: 16, position: PlayerRole.lw),
+    Player(id: 13, name: 'Bilal El Khannouss', jerseyNumber: 14, position: PlayerRole.am),
+    Player(id: 14, name: 'Jawad El Yamiq', jerseyNumber: 18, position: PlayerRole.cb),
   ];
 
   Formation _formation = const Formation(
@@ -86,11 +86,11 @@ class TactixAppState extends ChangeNotifier {
   List<Training> get trainingSessions => List<Training>.unmodifiable(_trainingSessions);
 
   List<Player> get benchPlayers {
-    final startingIds = _formation.positions.map((position) => position.playerId).whereType<String>().toSet();
+    final startingIds = _formation.positions.map((position) => position.playerId).whereType<int>().toSet();
     return _players.where((player) => !startingIds.contains(player.id)).toList(growable: false);
   }
 
-  Player? playerById(String? id) {
+  Player? playerById(int? id) {
     for (final player in _players) {
       if (player.id == id) return player;
     }
@@ -162,7 +162,7 @@ class TactixAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void deletePlayer(String playerId) {
+  void deletePlayer(int playerId) {
     _players.removeWhere((player) => player.id == playerId);
     for (var index = 0; index < _savedFormations.length; index++) {
       _savedFormations[index] = _savedFormations[index].copyWith(
@@ -213,7 +213,7 @@ class TactixAppState extends ChangeNotifier {
     notifyListeners();
   }
 
-  void assignPlayerToPosition({required String playerId, required String positionId}) {
+  void assignPlayerToPosition({required int playerId, required String positionId}) {
     _storeActiveFormation(_formation.copyWith(
       positions: _formation.positions
           .map((position) {

@@ -29,7 +29,7 @@ class FootballField extends StatelessWidget {
   final String? selectedPositionId;
   final void Function(String positionId, double x, double y) onMovePosition;
   final ValueChanged<String> onSnapPosition;
-  final void Function(String playerId, String positionId) onAssignPlayerToPosition;
+  final void Function(int playerId, String positionId) onAssignPlayerToPosition;
   final void Function(String fromPositionId, String toPositionId) onSwapPlayersBetweenPositions;
   final void Function(String opponentId, double x, double y) onMoveOpponent;
 
@@ -71,19 +71,19 @@ class FootballField extends StatelessWidget {
                   Positioned(
                     left: (width - _playerMarkerWidth) * position.x,
                     top: (height - _playerMarkerHeight) * position.y,
-                    child: DragTarget<String>(
+                    child: DragTarget<Object>(
                       onWillAcceptWithDetails: (details) {
                         final data = details.data;
-                        if (_isPositionPayload(data)) {
+                        if (data is String && _isPositionPayload(data)) {
                           return _positionIdFromPayload(data) != position.id;
                         }
-                        return true;
+                        return data is int; // bench player
                       },
                       onAcceptWithDetails: (details) {
                         final data = details.data;
-                        if (_isPositionPayload(data)) {
+                        if (data is String && _isPositionPayload(data)) {
                           onSwapPlayersBetweenPositions(_positionIdFromPayload(data), position.id);
-                        } else {
+                        } else if (data is int) {
                           onAssignPlayerToPosition(data, position.id);
                         }
                         onSelectPosition(position.id);

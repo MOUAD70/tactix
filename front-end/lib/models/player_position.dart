@@ -14,7 +14,7 @@ class PlayerPosition {
   final String label;
   final double x;
   final double y;
-  final String? playerId;
+  final int? playerId;
   final String instructions;
 
   bool get hasAssignedPlayer => playerId != null;
@@ -32,7 +32,7 @@ class PlayerPosition {
       label: label ?? this.label,
       x: x ?? this.x,
       y: y ?? this.y,
-      playerId: identical(playerId, _playerIdSentinel) ? this.playerId : playerId as String?,
+      playerId: identical(playerId, _playerIdSentinel) ? this.playerId : playerId as int?,
       instructions: instructions ?? this.instructions,
     );
   }

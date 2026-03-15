@@ -1,20 +1,26 @@
 import 'package:flutter/material.dart';
+import 'package:go_router/go_router.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 
-import 'package:flutter_application_1/core/state/app_state.dart';
+import '../auth/providers/auth_provider.dart';
+import '../formation/providers/formation_provider.dart';
+import '../players/providers/player_provider.dart';
+import '../training/providers/training_provider.dart';
 
-class HomeScreen extends StatelessWidget {
-  const HomeScreen({
-    super.key,
-    required this.onNavigateToSection,
-    required this.onOpenFormationBoard,
-  });
-
-  final ValueChanged<int> onNavigateToSection;
-  final Future<void> Function() onOpenFormationBoard;
+class HomeScreen extends ConsumerWidget {
+  const HomeScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
-    final state = AppStateScope.of(context);
+  Widget build(BuildContext context, WidgetRef ref) {
+    final authState = ref.watch(authProvider);
+    final playersState = ref.watch(playerListProvider);
+    final trainingsState = ref.watch(trainingListProvider);
+    final formationsState = ref.watch(formationNotifierProvider);
+
+    final coachName = authState.asData?.value?.name ?? 'Coach';
+    final playerCount = playersState.asData?.value.length ?? 0;
+    final trainingCount = trainingsState.asData?.value.length ?? 0;
+    final formationCount = formationsState.list.asData?.value.length ?? 0;
 
     return SingleChildScrollView(
       child: Column(
@@ -28,7 +34,7 @@ class HomeScreen extends StatelessWidget {
                 children: [
                   Text('Team overview', style: Theme.of(context).textTheme.headlineSmall),
                   const SizedBox(height: 8),
-                  Text('Welcome back, ${state.coachName}. Your tactical board is ready for the next session.'),
+                  Text('Welcome back, $coachName. Your tactical board is ready for the next session.'),
                 ],
               ),
             ),
@@ -38,14 +44,9 @@ class HomeScreen extends StatelessWidget {
             spacing: 16,
             runSpacing: 16,
             children: [
-              _StatCard(label: 'Players', value: '${state.players.length}', icon: Icons.groups_2_outlined),
-              _StatCard(label: 'Bench', value: '${state.benchPlayers.length}', icon: Icons.event_seat_outlined),
-              _StatCard(label: 'Sessions', value: '${state.trainingSessions.length}', icon: Icons.fitness_center_outlined),
-              _StatCard(
-                label: 'Instructions',
-                value: '${state.formation.positions.where((p) => p.instructions.isNotEmpty).length}',
-                icon: Icons.assignment_outlined,
-              ),
+              _StatCard(label: 'Players', value: '$playerCount', icon: Icons.groups_2_outlined),
+              _StatCard(label: 'Formations', value: '$formationCount', icon: Icons.sports_soccer_outlined),
+              _StatCard(label: 'Sessions', value: '$trainingCount', icon: Icons.fitness_center_outlined),
             ],
           ),
           const SizedBox(height: 16),
@@ -64,36 +65,13 @@ class HomeScreen extends StatelessWidget {
                       _QuickAction(
                         label: 'Formation',
                         icon: Icons.sports_soccer,
-                        onTap: () {
-                          onOpenFormationBoard();
-                        },
+                        onTap: () => context.go('/formations'),
                       ),
-                      _QuickAction(label: 'Players', icon: Icons.groups, onTap: () => onNavigateToSection(2)),
-                      _QuickAction(label: 'Training', icon: Icons.fitness_center, onTap: () => onNavigateToSection(3)),
-                      _QuickAction(label: 'Profile', icon: Icons.person, onTap: () => onNavigateToSection(4)),
+                      _QuickAction(label: 'Players', icon: Icons.groups, onTap: () => context.go('/players')),
+                      _QuickAction(label: 'Training', icon: Icons.fitness_center, onTap: () => context.go('/training')),
+                      _QuickAction(label: 'Profile', icon: Icons.person, onTap: () => context.go('/profile')),
                     ],
                   ),
-                ],
-              ),
-            ),
-          ),
-          const SizedBox(height: 16),
-          Card(
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text('Recent training sessions', style: Theme.of(context).textTheme.titleLarge),
-                  const SizedBox(height: 12),
-                  for (final session in state.trainingSessions)
-                    ListTile(
-                      contentPadding: EdgeInsets.zero,
-                      leading: const CircleAvatar(child: Icon(Icons.flag_outlined)),
-                      title: Text(session.title),
-                      subtitle: Text('${session.focusArea} • ${session.scheduleLabel}'),
-                      trailing: Text('${session.durationMinutes} min'),
-                    ),
                 ],
               ),
             ),

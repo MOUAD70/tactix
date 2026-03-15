@@ -11,8 +11,8 @@ class BenchPanel extends StatelessWidget {
   });
 
   final List<Player> benchPlayers;
-  final String? selectedPlayerId;
-  final ValueChanged<String> onSelectPlayer;
+  final int? selectedPlayerId;
+  final ValueChanged<int> onSelectPlayer;
 
   @override
   Widget build(BuildContext context) {
@@ -32,7 +32,7 @@ class BenchPanel extends StatelessWidget {
               for (final player in benchPlayers)
                 Padding(
                   padding: const EdgeInsets.only(bottom: 10),
-                  child: Draggable<String>(
+                  child: Draggable<int>(
                     data: player.id,
                     feedback: Material(
                       color: Colors.transparent,

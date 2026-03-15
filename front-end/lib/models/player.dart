@@ -23,7 +23,7 @@ class Player {
     required this.position,
   });
 
-  final String id;
+  final int id;
   final String name;
   final int jerseyNumber;
   final PlayerRole position;
@@ -31,7 +31,7 @@ class Player {
   String get numberLabel => '#$jerseyNumber';
 
   Player copyWith({
-    String? id,
+    int? id,
     String? name,
     int? jerseyNumber,
     PlayerRole? position,

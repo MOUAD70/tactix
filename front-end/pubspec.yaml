@@ -35,6 +35,18 @@ dependencies:
   # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
 
+  # Networking
+  http: ^1.4.0
+
+  # State management
+  flutter_riverpod: ^2.3.7
+
+  # Secure storage for auth tokens
+  flutter_secure_storage: ^9.0.0
+
+  # Navigation
+  go_router: ^13.0.0
+
 dev_dependencies:
   flutter_test:
     sdk: flutter

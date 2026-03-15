@@ -1,3 +1,7 @@
+// DEAD CODE — this file is not imported or routed anywhere.
+// Kept intentionally per project rules. Do not import or navigate to this screen.
+// The active add-player flow uses PlayerFormScreen via /players/add.
+
 import 'package:flutter/material.dart';
 
 import 'package:flutter_application_1/models/player.dart';
@@ -56,8 +60,9 @@ class _AddPlayerScreenState extends State<AddPlayerScreen> {
                   CustomButton(
                     label: 'Save Player',
                     onPressed: () {
+                      // DEAD CODE — id type fixed from String to int.
                       final player = Player(
-                        id: DateTime.now().microsecondsSinceEpoch.toString(),
+                        id: DateTime.now().microsecondsSinceEpoch, // Fixed: was toString(), now int
                         name: _nameController.text.trim(),
                         jerseyNumber: int.tryParse(_numberController.text) ?? 0,
                         position: _position,

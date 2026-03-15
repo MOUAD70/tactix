@@ -4,6 +4,8 @@ use App\Http\Controllers\Auth\AuthController;
 use App\Http\Controllers\FormationController;
 use App\Http\Controllers\FormationPositionController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\TrainingAttendanceController;
+use App\Http\Controllers\TrainingSessionController;
 use Illuminate\Support\Facades\Route;
 
 // Public authentication routes
@@ -32,4 +34,15 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Position update route
     Route::patch('/formations/{formation_id}/positions/{position_id}', [FormationPositionController::class, 'update']);
+
+    // Training session routes
+    Route::get('/teams/{team_id}/training', [TrainingSessionController::class, 'index']);
+    Route::get('/training/{id}', [TrainingSessionController::class, 'show']);
+    Route::post('/teams/{team_id}/training', [TrainingSessionController::class, 'store']);
+    Route::put('/training/{id}', [TrainingSessionController::class, 'update']);
+    Route::delete('/training/{id}', [TrainingSessionController::class, 'destroy']);
+
+    // Training attendance routes
+    Route::post('/training/{id}/attendance', [TrainingAttendanceController::class, 'bulkStore']);
+    Route::patch('/training/{id}/attendance/{player_id}', [TrainingAttendanceController::class, 'updateSingle']);
 });

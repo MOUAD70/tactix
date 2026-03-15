@@ -8,6 +8,7 @@ use Database\Seeders\TeamSeeder;
 use Database\Seeders\UserSeeder;
 use Database\Seeders\PlayerSeeder;
 use Database\Seeders\FormationSeeder;
+use Database\Seeders\TrainingSeeder;
 
 class DatabaseSeeder extends Seeder
 {
@@ -23,6 +24,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             PlayerSeeder::class,
             FormationSeeder::class,
+            TrainingSeeder::class,
         ]);
     }
 }

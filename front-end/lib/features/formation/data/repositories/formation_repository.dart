@@ -96,7 +96,7 @@ class FormationRepository {
       ApiConstants.formationPosition
           .replaceAll('{formation_id}', formationId.toString())
           .replaceAll('{position_id}', positionId.toString()),
-      body: {'x': x, 'y': y},
+      body: {'x': x.round(), 'y': y.round()},
     ) as Map<String, dynamic>;
 
     return FormationPositionModel.fromJson(response['data'] as Map<String, dynamic>);

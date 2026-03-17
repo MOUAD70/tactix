@@ -66,6 +66,27 @@ class FormationNotifier extends StateNotifier<FormationState> {
     }
   }
 
+  Future<void> createFormation(String name, List<FormationPositionModel> positions) async {
+    state = state.copyWith(list: const AsyncValue.loading());
+    try {
+      final newFormation = await _repository.createFormation(
+        name: name,
+        positions: positions,
+      );
+      
+      // Reload the list to include the new formation
+      final list = await _repository.fetchFormations();
+      state = state.copyWith(
+        list: AsyncValue.data(list),
+        active: AsyncValue.data(newFormation),
+      );
+    } catch (error) {
+      // Restore previous state by reloading
+      loadFormations();
+      rethrow;
+    }
+  }
+
   Future<void> selectFormation(int formationId) async {
     state = state.copyWith(active: const AsyncValue.loading());
     try {

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 
 import 'package:flutter_application_1/features/formation/widgets/opponent_marker.dart';
-import 'package:flutter_application_1/features/formation/widgets/player_marker.dart';
+import 'package:flutter_application_1/features/formation/widgets/player_card.dart';
 import 'package:flutter_application_1/models/opponent_player.dart';
 import 'package:flutter_application_1/models/player_position.dart';
 
@@ -33,8 +33,8 @@ class FootballField extends StatelessWidget {
   final void Function(String fromPositionId, String toPositionId) onSwapPlayersBetweenPositions;
   final void Function(String opponentId, double x, double y) onMoveOpponent;
 
-  static const double _playerMarkerWidth = 72;
-  static const double _playerMarkerHeight = 60;
+  static const double _playerMarkerWidth = 80;
+  static const double _playerMarkerHeight = 90;
   static const double _opponentMarkerWidth = 62;
   static const double _opponentMarkerHeight = 46;
 
@@ -107,11 +107,12 @@ class FootballField extends StatelessWidget {
                             );
                           },
                           onPanEnd: (_) => onSnapPosition(position.id),
-                          child: PlayerMarker(
-                            label: position.label,
-                            playerName: resolvePlayerName(position),
+                          child: PlayerCard(
+                            position: position.label,
+                            name: resolvePlayerName(position),
                             isSelected: position.id == selectedPositionId || candidateData.isNotEmpty,
                             onTap: () => onSelectPosition(position.id),
+                            size: 70,
                           ),
                         );
 
@@ -123,11 +124,12 @@ class FootballField extends StatelessWidget {
                           data: '$_positionDragPrefix${position.id}',
                           feedback: Material(
                             color: Colors.transparent,
-                            child: PlayerMarker(
-                              label: position.label,
-                              playerName: resolvePlayerName(position),
+                            child: PlayerCard(
+                              position: position.label,
+                              name: resolvePlayerName(position),
                               isSelected: true,
                               onTap: () {},
+                              size: 70,
                             ),
                           ),
                           childWhenDragging: Opacity(opacity: 0.35, child: marker),

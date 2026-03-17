@@ -4,6 +4,7 @@ import 'package:go_router/go_router.dart';
 
 import '../features/auth/providers/auth_provider.dart';
 import '../features/auth/screens/splash_screen.dart';
+import '../features/auth/screens/welcome_screen.dart';
 import '../features/auth/login_screen.dart';
 import '../features/auth/register_screen.dart';
 import '../features/formation/formation_screen_v2.dart';
@@ -14,6 +15,7 @@ import '../features/players/players_screen.dart';
 import '../features/profile/profile_screen.dart';
 import '../features/training/training_detail_screen.dart';
 import '../features/training/training_screen.dart';
+import '../core/theme/theme_provider.dart';
 
 /// A simple [ChangeNotifier] that updates whenever authentication state changes.
 ///
@@ -42,21 +44,22 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       final location = state.uri.toString();
       final isGoingToLogin = location == '/login';
       final isGoingToRegister = location == '/register';
+      final isGoingToWelcome = location == '/welcome';
       final isGoingToSplash = location == '/splash';
 
       if (!isAuthenticated) {
         // While we are checking auth state, keep the splash page.
         if (authState.isLoading) return '/splash';
 
-        // If not authenticated, stay on login/register.
-        if (isGoingToLogin || isGoingToRegister) return null;
+        // If not authenticated, allowed to be on welcome, login or register.
+        if (isGoingToWelcome || isGoingToLogin || isGoingToRegister) return null;
         
-        // Otherwise (including from splash), redirect to login
-        return '/login';
+        // Otherwise (including from splash), redirect to welcome
+        return '/welcome';
       }
 
       // If authenticated, never show auth pages.
-      if (isGoingToLogin || isGoingToRegister || isGoingToSplash) {
+      if (isGoingToLogin || isGoingToRegister || isGoingToSplash || isGoingToWelcome) {
         return '/home';
       }
 
@@ -66,6 +69,10 @@ final appRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/splash',
         builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
+        path: '/welcome',
+        builder: (context, state) => const WelcomeScreen(),
       ),
       GoRoute(
         path: '/login',
@@ -138,7 +145,7 @@ final appRouterProvider = Provider<GoRouter>((ref) {
   );
 });
 
-class AppShell extends StatelessWidget {
+class AppShell extends ConsumerWidget {
   const AppShell({super.key, required this.child});
 
   final Widget child;
@@ -157,20 +164,48 @@ class AppShell extends StatelessWidget {
   }
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final router = GoRouter.of(context);
-    final selectedIndex =
-        _selectedIndex(router.routerDelegate.currentConfiguration.uri.toString());
+    final location = router.routerDelegate.currentConfiguration.uri.toString();
+    final selectedIndex = _selectedIndex(location);
+    final themeMode = ref.watch(themeProvider);
+
+    final isMobile = MediaQuery.of(context).size.width < 600;
+    final isHome = location.startsWith('/home');
+
+    String getTitle() {
+      if (location.startsWith('/home')) return 'Tactix';
+      if (location.startsWith('/formations')) return 'Formation';
+      if (location.startsWith('/players')) return 'Players';
+      if (location.startsWith('/training')) return 'Training';
+      if (location.startsWith('/profile')) return 'Profile';
+      return 'Tactix';
+    }
+
+    // Header logic:
+    // - On Mobile: Title is page-specific. Action (toggle) only on Home.
+    // - On Tablet/PC: Title and Action on all pages.
+    final String titleText = getTitle();
+    final bool showToggle = !isMobile || isHome;
 
     return Scaffold(
-      appBar: AppBar(title: const Text('Tactix')),
+      appBar: AppBar(
+        title: Text(titleText),
+        actions: [
+          if (showToggle)
+            IconButton(
+              icon: Icon(themeMode == ThemeMode.dark ? Icons.light_mode : Icons.dark_mode),
+              onPressed: () => ref.read(themeProvider.notifier).toggleTheme(),
+            ),
+          const SizedBox(width: 8),
+        ],
+      ),
       body: SafeArea(child: child),
       bottomNavigationBar: NavigationBar(
         selectedIndex: selectedIndex,
         onDestinationSelected: (index) {
           final route = _tabRoutes[index];
-          final currentLocation =
-              router.routerDelegate.currentConfiguration.uri.toString();
+          final currentLocation = router.routerDelegate.currentConfiguration.uri.toString();
           if (route == currentLocation) return;
           router.go(route);
         },

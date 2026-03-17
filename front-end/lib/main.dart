@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import 'core/constants/app_constants.dart';
 import 'core/theme/app_theme.dart';
+import 'core/theme/theme_provider.dart';
 import 'navigation/app_router.dart';
 
 void main() {
@@ -15,11 +16,14 @@ class TactixApp extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final router = ref.watch(appRouterProvider);
+    final themeMode = ref.watch(themeProvider);
 
     return MaterialApp.router(
       debugShowCheckedModeBanner: false,
       title: AppConstants.appName,
-      theme: AppTheme.buildTheme(),
+      theme: AppTheme.lightTheme(),
+      darkTheme: AppTheme.darkTheme(),
+      themeMode: themeMode,
       routerConfig: router,
     );
   }

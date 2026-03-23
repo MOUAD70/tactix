@@ -1,86 +1,93 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-
+import 'package:dio/dio.dart';
 import '../../auth/providers/auth_provider.dart';
-import '../../../core/errors/failures.dart';
-import '../data/models/training_attendance_model.dart';
 import '../data/models/training_session_model.dart';
+import '../data/models/training_attendance_model.dart';
 import '../data/repositories/training_repository.dart';
+import '../data/services/training_service.dart';
 
-final trainingRepositoryProvider = Provider<TrainingRepository>((ref) {
-  final apiClient = ref.watch(apiClientProvider);
-  return TrainingRepository(apiClient: apiClient);
+final dioProvider = Provider<Dio>((ref) {
+  final dio = Dio(BaseOptions(
+    baseUrl: 'http://127.0.0.1:8000/api',
+    headers: {
+      'Accept': 'application/json',
+      'Content-Type': 'application/json',
+    },
+  ));
+
+  dio.interceptors.add(InterceptorsWrapper(
+    onRequest: (options, handler) async {
+      final secureStorage = ref.read(secureStorageProvider);
+      final token = await secureStorage.readToken();
+      if (token != null && token.isNotEmpty) {
+        options.headers['Authorization'] = 'Bearer $token';
+      }
+      return handler.next(options);
+    },
+    onError: (e, handler) async {
+      if (e.response?.statusCode == 401 && e.requestOptions.extra['retried'] != true) {
+        e.requestOptions.extra['retried'] = true;
+        final secureStorage = ref.read(secureStorageProvider);
+        final token = await secureStorage.readToken();
+        if (token != null && token.isNotEmpty) {
+          e.requestOptions.headers['Authorization'] = 'Bearer $token';
+          try {
+            final response = await dio.fetch(e.requestOptions);
+            return handler.resolve(response);
+          } catch (_) {
+            return handler.next(e);
+          }
+        }
+      }
+      return handler.next(e);
+    },
+  ));
+  return dio;
 });
 
-final trainingListProvider = StateNotifierProvider<TrainingListNotifier, AsyncValue<List<TrainingSessionModel>>>(
-  (ref) {
-    final authState = ref.watch(authProvider);
-    final teamId = authState.asData?.value?.teamId;
-    return TrainingListNotifier(ref.watch(trainingRepositoryProvider), teamId: teamId);
-  },
-);
+final trainingServiceProvider = Provider<TrainingService>((ref) => TrainingService(ref.watch(dioProvider)));
+final trainingRepositoryProvider = Provider<TrainingRepository>((ref) => TrainingRepository(apiClient: ref.watch(trainingServiceProvider)));
 
-final trainingSessionProvider = StateNotifierProvider.family<TrainingSessionNotifier, AsyncValue<TrainingSessionModel?>, int>(
-  (ref, sessionId) {
-    final repository = ref.watch(trainingRepositoryProvider);
-    final authState = ref.watch(authProvider);
-    final teamId = authState.asData?.value?.teamId;
-    return TrainingSessionNotifier(repository, sessionId: sessionId, teamId: teamId);
-  },
-);
+final trainingListProvider = StateNotifierProvider<TrainingListNotifier, AsyncValue<List<TrainingSessionModel>>>((ref) {
+  final teamId = ref.watch(authProvider).value?.teamId;
+  return TrainingListNotifier(ref.watch(trainingRepositoryProvider), teamId: teamId, ref: ref);
+});
+
+final trainingSessionProvider = StateNotifierProvider.family<TrainingSessionNotifier, AsyncValue<TrainingSessionModel?>, int>((ref, sessionId) {
+  final teamId = ref.watch(authProvider).value?.teamId;
+  return TrainingSessionNotifier(ref.watch(trainingRepositoryProvider), sessionId: sessionId, teamId: teamId);
+});
 
 class TrainingListNotifier extends StateNotifier<AsyncValue<List<TrainingSessionModel>>> {
-  TrainingListNotifier(this._repository, {required this.teamId}) : super(const AsyncValue.loading()) {
+  TrainingListNotifier(this._repository, {required this.teamId, required this.ref}) : super(const AsyncValue.loading()) {
     loadSessions();
   }
-
   final TrainingRepository _repository;
   final int? teamId;
+  final Ref ref;
 
   Future<void> loadSessions() async {
-    if (teamId == null) {
-      state = AsyncValue.error(AuthenticationFailure('Team not found'), StackTrace.current);
-      return;
-    }
-
+    if (teamId == null) return;
     state = const AsyncValue.loading();
     try {
       final sessions = await _repository.fetchSessions(teamId: teamId!);
       state = AsyncValue.data(sessions);
-    } catch (error, stack) {
-      state = AsyncValue.error(error, stack);
-    }
+    } catch (e, st) { state = AsyncValue.error(e, st); }
   }
 
-  Future<void> createSession({
-    required String title,
-    required String description,
-    required DateTime sessionDate,
-  }) async {
+  Future<void> createSession({required String title, required String description, required DateTime date}) async {
     if (teamId == null) return;
-
-    state = const AsyncValue.loading();
     try {
-      final created = await _repository.createSession(
-        teamId: teamId!,
-        title: title,
-        description: description,
-        sessionDate: sessionDate,
+      await _repository.createSession(
+        teamId: teamId!, 
+        title: title, 
+        description: description, 
+        sessionDate: date
       );
-      final list = state.asData?.value ?? [];
-      state = AsyncValue.data([created, ...list]);
-    } catch (error, stack) {
-      state = AsyncValue.error(error, stack);
-    }
-  }
-
-  Future<void> deleteSession(int sessionId) async {
-    state = const AsyncValue.loading();
-    try {
-      await _repository.deleteSession(sessionId);
-      final list = state.asData?.value ?? [];
-      state = AsyncValue.data(list.where((s) => s.id != sessionId).toList(growable: false));
-    } catch (error, stack) {
-      state = AsyncValue.error(error, stack);
+      ref.invalidateSelf();
+    } catch (e, st) { 
+      print("Create Session Error: $e");
+      rethrow; 
     }
   }
 }
@@ -89,60 +96,39 @@ class TrainingSessionNotifier extends StateNotifier<AsyncValue<TrainingSessionMo
   TrainingSessionNotifier(this._repository, {required this.sessionId, required this.teamId}) : super(const AsyncValue.loading()) {
     loadSession();
   }
-
   final TrainingRepository _repository;
   final int sessionId;
   final int? teamId;
 
   Future<void> loadSession() async {
-    if (teamId == null) {
-      state = AsyncValue.error(AuthenticationFailure('Team not found'), StackTrace.current);
-      return;
-    }
-
+    if (teamId == null) return;
     state = const AsyncValue.loading();
     try {
-      final session = await _repository.fetchSession(sessionId);
+      final session = await _repository.fetchSession(sessionId, teamId: teamId!);
       state = AsyncValue.data(session);
-    } catch (error, stack) {
-      state = AsyncValue.error(error, stack);
-    }
+    } catch (e, st) { state = AsyncValue.error(e, st); }
   }
 
-  Future<void> submitAttendance(List<TrainingAttendanceModel> attendance) async {
-    final current = state.asData?.value;
-    if (current == null) return;
-
-    state = const AsyncValue.loading();
+  Future<void> submitAttendance(List<TrainingAttendanceModel> attendanceList) async {
+    if (teamId == null) return;
     try {
-      final summary = await _repository.submitAttendance(sessionId: sessionId, attendance: attendance);
-      final updated = current.copyWith(summary: summary, attendance: attendance);
-      state = AsyncValue.data(updated);
-    } catch (error, stack) {
-      state = AsyncValue.error(error, stack);
-    }
+      final data = {'attendance': attendanceList.map((a) => a.toJson()).toList()};
+      await _repository.saveTacticalData(sessionId: sessionId, teamId: teamId!, data: data);
+      await loadSession();
+    } catch (e, st) { state = AsyncValue.error(e, st); }
   }
 
-  Future<void> updateAttendance(TrainingAttendanceModel attendance) async {
-    final current = state.asData?.value;
-    if (current == null) return;
-
-    state = const AsyncValue.loading();
+  Future<void> saveTacticalData(List<Map<String, dynamic>> players, List<List<dynamic>> lines) async {
+    if (teamId == null) return;
     try {
-      final updatedRecord = await _repository.updateAttendance(
-        sessionId: sessionId,
-        playerId: attendance.playerId,
-        attendance: attendance,
-      );
-
-      final updatedList = current.attendance
-              ?.map((item) => item.playerId == updatedRecord.playerId ? updatedRecord : item)
-              .toList(growable: false) ??
-          <TrainingAttendanceModel>[];
-
-      state = AsyncValue.data(current.copyWith(attendance: updatedList));
-    } catch (error, stack) {
-      state = AsyncValue.error(error, stack);
-    }
+      final data = {
+        'tactical_data': {
+          'players': players,
+          'lines': lines,
+        }
+      };
+      await _repository.saveTacticalData(sessionId: sessionId, teamId: teamId!, data: data);
+      await loadSession();
+    } catch (e, st) { state = AsyncValue.error(e, st); }
   }
 }

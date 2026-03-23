@@ -10,6 +10,7 @@ class TrainingAttendance extends Model
 {
     /** @use HasFactory<\Database\Factories\TrainingAttendanceFactory> */
     use HasFactory;
+    protected $table = 'training_attendance';
 
     /**
      * Disable timestamps for this model.

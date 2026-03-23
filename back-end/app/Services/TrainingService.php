@@ -7,26 +7,17 @@ use App\Models\Team;
 use App\Models\TrainingAttendance;
 use App\Models\TrainingSession;
 use App\Models\User;
-use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class TrainingService
 {
-    /**
-     * Get all training sessions for a team.
-     *
-     * @param  User  $user
-     * @param  int  $teamId
-     * @return Collection<int, TrainingSession>
-     */
     public function index(User $user, int $teamId): Collection
     {
-        // Ensure team exists
         if (!Team::find($teamId)) {
             abort(404, 'Team not found.');
         }
 
-        // Coach can only view own team
         $this->ensureUserCanAccessTeam($user, $teamId);
 
         $sessions = TrainingSession::where('team_id', $teamId)
@@ -49,31 +40,32 @@ class TrainingService
         });
     }
 
-    /**
-     * Get a single training session with full attendance.
-     *
-     * @param  User  $user
-     * @param  int  $sessionId
-     * @return TrainingSession
-     */
-    public function show(User $user, int $sessionId): TrainingSession
+    public function show(User $user, int $sessionId): object
     {
-        $session = TrainingSession::with(['attendance.player'])->find($sessionId);
-
-        if (!$session) {
-            abort(404, 'Training session not found.');
-        }
+        $session = TrainingSession::with(['attendance.player'])->findOrFail($sessionId);
 
         $this->ensureUserCanAccessTeam($user, $session->team_id);
 
-        $attendance = $session->attendance->map(function (TrainingAttendance $record) {
-            return [
-                'player_id' => $record->player_id,
-                'name' => $record->player?->name,
-                'status' => $record->status,
-                'note' => $record->note,
-            ];
-        });
+        if ($session->attendance->isEmpty()) {
+            $players = Player::where('team_id', $session->team_id)->get();
+            $attendance = $players->map(function ($player) {
+                return [
+                    'player_id' => $player->id,
+                    'name' => $player->name,
+                    'status' => 'present',
+                    'note' => null,
+                ];
+            });
+        } else {
+            $attendance = $session->attendance->map(function (TrainingAttendance $record) {
+                return [
+                    'player_id' => $record->player_id,
+                    'name' => $record->player?->name ?? 'Unknown',
+                    'status' => $record->status,
+                    'note' => $record->note,
+                ];
+            });
+        }
 
         $summary = $this->calculateSummary($session->attendance);
 
@@ -83,17 +75,8 @@ class TrainingService
         ]);
     }
 
-    /**
-     * Create a new training session.
-     *
-     * @param  User  $user
-     * @param  int  $teamId
-     * @param  array  $data
-     * @return TrainingSession
-     */
     public function store(User $user, int $teamId, array $data): TrainingSession
     {
-        // Ensure team exists
         if (!Team::find($teamId)) {
             abort(404, 'Team not found.');
         }
@@ -105,21 +88,9 @@ class TrainingService
         return TrainingSession::create($data);
     }
 
-    /**
-     * Update a training session.
-     *
-     * @param  User  $user
-     * @param  int  $sessionId
-     * @param  array  $data
-     * @return TrainingSession
-     */
     public function update(User $user, int $sessionId, array $data): TrainingSession
     {
-        $session = TrainingSession::find($sessionId);
-
-        if (!$session) {
-            abort(404, 'Training session not found.');
-        }
+        $session = TrainingSession::findOrFail($sessionId);
 
         $this->ensureUserCanAccessTeam($user, $session->team_id);
 
@@ -128,41 +99,18 @@ class TrainingService
         return $session;
     }
 
-    /**
-     * Delete a training session.
-     *
-     * @param  User  $user
-     * @param  int  $sessionId
-     * @return void
-     */
     public function destroy(User $user, int $sessionId): void
     {
-        $session = TrainingSession::find($sessionId);
-
-        if (!$session) {
-            abort(404, 'Training session not found.');
-        }
+        $session = TrainingSession::findOrFail($sessionId);
 
         $this->ensureUserCanAccessTeam($user, $session->team_id);
 
         $session->delete();
     }
 
-    /**
-     * Submit bulk attendance for a session.
-     *
-     * @param  User  $user
-     * @param  int  $sessionId
-     * @param  array  $data
-     * @return array{total:int, present:int, absent:int, late:int}
-     */
     public function bulkAttendance(User $user, int $sessionId, array $data): array
     {
-        $session = TrainingSession::find($sessionId);
-
-        if (!$session) {
-            abort(404, 'Training session not found.');
-        }
+        $session = TrainingSession::findOrFail($sessionId);
 
         $this->ensureUserCanAccessTeam($user, $session->team_id);
 
@@ -187,52 +135,6 @@ class TrainingService
         });
     }
 
-    /**
-     * Update a single attendance record.
-     *
-     * @param  User  $user
-     * @param  int  $sessionId
-     * @param  int  $playerId
-     * @param  array  $data
-     * @return array<string, mixed>
-     */
-    public function updateAttendance(User $user, int $sessionId, int $playerId, array $data): array
-    {
-        $session = TrainingSession::find($sessionId);
-
-        if (!$session) {
-            abort(404, 'Training session not found.');
-        }
-
-        $this->ensureUserCanAccessTeam($user, $session->team_id);
-
-        $attendance = TrainingAttendance::where('training_id', $sessionId)
-            ->where('player_id', $playerId)
-            ->first();
-
-        if (!$attendance) {
-            abort(404, 'Attendance record not found for this player.');
-        }
-
-        $attendance->update($data);
-
-        $player = Player::find($playerId);
-
-        return [
-            'player_id' => $playerId,
-            'name' => $player?->name,
-            'status' => $attendance->status,
-            'note' => $attendance->note,
-        ];
-    }
-
-    /**
-     * Ensure all provided player IDs belong to the given team.
-     *
-     * @param  array  $attendance
-     * @param  int  $teamId
-     * @return void
-     */
     private function ensurePlayersBelongToTeam(array $attendance, int $teamId): void
     {
         $playerIds = array_column($attendance, 'player_id');
@@ -246,12 +148,6 @@ class TrainingService
         }
     }
 
-    /**
-     * Ensure player IDs in attendance are unique.
-     *
-     * @param  array  $attendance
-     * @return void
-     */
     private function ensureUniquePlayerIds(array $attendance): void
     {
         $seen = [];
@@ -260,19 +156,13 @@ class TrainingService
             $playerId = $record['player_id'];
 
             if (isset($seen[$playerId])) {
-                abort(409, 'An attendance record already exists for this player in this session.');
+                abort(409, 'An attendance record already exists for this player.');
             }
 
             $seen[$playerId] = true;
         }
     }
 
-    /**
-     * Calculate attendance summary counts.
-     *
-     * @param  \Illuminate\Database\Eloquent\Collection<int, TrainingAttendance>  $attendance
-     * @return array{total:int, present:int, absent:int, late:int}
-     */
     private function calculateSummary($attendance): array
     {
         $total = $attendance->count();
@@ -288,24 +178,14 @@ class TrainingService
         ];
     }
 
-    /**
-     * Ensure the authenticated user can access a specific team.
-     * Coaches can only access their own team. Admins can access any team.
-     *
-     * @param  User  $user
-     * @param  int  $teamId
-     * @return void
-     */
     private function ensureUserCanAccessTeam(User $user, int $teamId): void
     {
-        // Admins can access all teams
         if ($user->role === 'admin') {
             return;
         }
 
-        // Coaches can only access their own team
         if ($user->role === 'coach' && $user->team_id !== $teamId) {
-            abort(403, 'You are not authorized to manage this training session.');
+            abort(403, 'You are not authorized to manage this session.');
         }
     }
 }

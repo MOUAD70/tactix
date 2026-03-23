@@ -12,6 +12,7 @@ class TrainingSession extends Model
 {
     /** @use HasFactory<\Database\Factories\TrainingSessionFactory> */
     use HasFactory;
+    protected $table = 'training_sessions';
 
     /**
      * The attributes that are mass assignable.
@@ -23,6 +24,12 @@ class TrainingSession extends Model
         'title',
         'description',
         'session_date',
+        'tactical_data',
+    ];
+
+    protected $casts = [
+        'tactical_data' => 'array',
+        'session_date' => 'datetime',
     ];
 
     /**

@@ -68,7 +68,14 @@ class TrainingSessionController extends Controller
 
         return response()->json([
             'message' => 'Training session created successfully.',
-            'data' => $session,
+            'data' => [
+                'id' => $session->id,
+                'team_id' => $session->team_id,
+                'title' => $session->title,
+                'description' => $session->description,
+                'session_date' => $session->session_date,
+                'tactical_data' => $session->tactical_data,
+            ],
         ], 201);
     }
 
@@ -89,7 +96,14 @@ class TrainingSessionController extends Controller
 
         return response()->json([
             'message' => 'Training session updated successfully.',
-            'data' => $session,
+            'data' => [
+                'id' => $session->id,
+                'team_id' => $session->team_id,
+                'title' => $session->title,
+                'description' => $session->description,
+                'session_date' => $session->session_date,
+                'tactical_data' => $session->tactical_data,
+            ],
         ], 200);
     }
 

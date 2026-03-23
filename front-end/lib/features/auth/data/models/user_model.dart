@@ -4,6 +4,7 @@ class UserModel {
     required this.name,
     required this.email,
     required this.role,
+    this.token, 
     this.teamId,
   });
 
@@ -11,6 +12,7 @@ class UserModel {
   final String name;
   final String email;
   final String role;
+  final String? token; 
   final int? teamId;
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -19,6 +21,7 @@ class UserModel {
       name: json['name'] as String,
       email: json['email'] as String,
       role: json['role'] as String,
+      token: json['token'] as String?,
       teamId: json['team_id'] is int ? json['team_id'] as int : (json['team_id'] is String ? int.tryParse(json['team_id'] as String) : null),
     );
   }
@@ -29,6 +32,7 @@ class UserModel {
       'name': name,
       'email': email,
       'role': role,
+      'token': token,
       'team_id': teamId,
     };
   }
